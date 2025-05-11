@@ -1,8 +1,20 @@
 #!/bin/bash
 set -e
 
-# Make sure DISTRO_ID is set, e.g., export DISTRO_ID=manjaro
-: "${DISTRO_ID:?DISTRO_ID must be set (e.g., manjaro)}"
+# 03-mount-zfs-datasets.sh
+
+# Check or detect DISTRO_ID
+if [ -z "${DISTRO_ID-}" ]; then
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO_ID=$ID
+        export DISTRO_ID
+        echo "Detected DISTRO_ID: $DISTRO_ID"
+    else
+        echo "Cannot detect DISTRO_ID and it is not set. Exiting."
+        exit 1
+    fi
+fi
 
 POOL=zroot
 ROOT_PARENT="$POOL/ROOT"
