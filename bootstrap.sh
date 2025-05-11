@@ -1,21 +1,30 @@
 #!/bin/bash
 set -e
 
-# --- Host Detection ---
-CPU_VENDOR=$(grep -m1 'vendor_id' /proc/cpuinfo | awk '{print $3}')
-NVME_COUNT=$(ls /dev/nvme* 2>/dev/null | wc -l)
+# Prompt for TARGET_HOST first
+read -p "Enter target hostname (leave blank for auto-detect): " TARGET_HOST
 
-if [[ "$CPU_VENDOR" == "AuthenticAMD" && "$NVME_COUNT" -ge 2 ]]; then
-    TARGET_HOST="parents-pc"
-elif [[ "$CPU_VENDOR" == "GenuineIntel" && "$NVME_COUNT" -eq 0 ]]; then
-    TARGET_HOST="thinkpad-t450"
-else
-    read -p "Unknown hardware. Please enter hostname (parents-pc/thinkpad-t450): " TARGET_HOST
+# Auto-detect if blank
+if [ -z "$TARGET_HOST" ]; then
+    CPU_VENDOR=$(grep -m1 'vendor_id' /proc/cpuinfo | awk '{print $3}')
+    NVME_COUNT=$(ls /dev/nvme* 2>/dev/null | wc -l)
+
+    if [[ "$CPU_VENDOR" == "AuthenticAMD" && "$NVME_COUNT" -ge 2 ]]; then
+        TARGET_HOST="parents-pc"
+    elif [[ "$CPU_VENDOR" == "GenuineIntel" && "$NVME_COUNT" -eq 0 ]]; then
+        TARGET_HOST="thinkpad-t450"
+    else
+        while [ -z "$TARGET_HOST" ]; do
+            read -p "Unknown hardware. Please enter hostname (parents-pc/thinkpad-t450): " TARGET_HOST
+        done
+    fi
 fi
+
 export TARGET_HOST
+
 echo "TARGET_HOST=$TARGET_HOST" > /tmp/host.conf
 
-# --- Distro Detection ---
+# Distro detection
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     DISTRO_ID=$ID
@@ -23,10 +32,12 @@ else
     echo "Cannot detect distro!"
     exit 1
 fi
+
 export DISTRO_ID
+
 echo "DISTRO_ID=$DISTRO_ID" >> /tmp/host.conf
 
-# --- Ensure git is installed ---
+# Ensure git is installed
 if ! command -v git &>/dev/null; then
     echo "Git not found, attempting to install..."
     case "$DISTRO_ID" in
@@ -46,7 +57,7 @@ if ! command -v git &>/dev/null; then
     esac
 fi
 
-# --- Clone the repo to $HOME ---
+# Clone the repo to $HOME
 REPO_DIR="$HOME/ansible-zfs-bootstrap"
 if [ ! -d "$REPO_DIR" ]; then
     git clone https://github.com/jjquin/ansible-zfs-bootstrap.git "$REPO_DIR"
