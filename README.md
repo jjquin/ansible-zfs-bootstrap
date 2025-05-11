@@ -27,8 +27,8 @@ Boot into a supported Linux live ISO (e.g., Manjaro, Debian, Fedora, etc.).
 You can run the bootstrap script directly with:
 
 ```bash
-bash /
-  ./01-setup-zfs.sh
+bash <(curl -fsSL https://raw.githubusercontent.com/jjquin/ansible-zfs-bootstrap/main/scripts/00-bootstrap.sh)
+
   ```
 - Proceed with pool creation, dataset setup, and base install as directed by the scripts.
 - After chroot and base install, use the included Ansible playbook (`ansible/site.yml`) to configure users, hostname, software, and more.
