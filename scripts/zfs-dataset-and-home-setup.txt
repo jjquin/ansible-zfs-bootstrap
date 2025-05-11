@@ -35,6 +35,25 @@ sudo zfs create -o mountpoint=/nix -o devices=off zroot/appdata/nix
 echo "All common datasets created!"
 sudo zfs list -r -o name,mountpoint zroot
 
+# Create all necessary parent directories under /mnt
+PARENT_DIRS=(
+    "/mnt/home/jj"
+    "/mnt/home/leah"
+    "/mnt/var/lib"
+)
+for dir in "${PARENT_DIRS[@]}"; do
+    if [ ! -d "$dir" ]; then
+        echo "Creating parent directory: $dir"
+        sudo mkdir -p "$dir"
+    else
+        echo "Parent directory already exists: $dir"
+    fi
+done
+
+# Mount all remaining datasets (ZFS will create child mountpoints as needed)
+echo "Mounting all datasets..."
+sudo zfs mount -a
+
 # ---------------------------------------------------------------
 # Home Directory and Symlink Setup (after mounting all datasets)
 # ---------------------------------------------------------------

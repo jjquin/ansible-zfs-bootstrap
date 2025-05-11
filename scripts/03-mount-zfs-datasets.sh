@@ -5,7 +5,8 @@ set -e
 : "${DISTRO_ID:?DISTRO_ID must be set (e.g., manjaro)}"
 
 POOL=zroot
-ROOT_DATASET="$POOL/ROOT/$DISTRO_ID"
+ROOT_PARENT="$POOL/ROOT"
+ROOT_DATASET="$ROOT_PARENT/$DISTRO_ID"
 MNT=/mnt
 
 # 1. Import pool if not already imported
@@ -14,47 +15,53 @@ if ! zpool list | grep -q "^$POOL\b"; then
     sudo zpool import $POOL
 fi
 
-# 2. Create root dataset for the distro if it doesn't exist
-if ! zfs list "$ROOT_DATASET" >/dev/null 2>&1; then
+# 2. Create zroot/ROOT if it doesn't exist (must be done before distro-specific root)
+if ! zfs list "$ROOT_PARENT" >/dev/null 2>&1; then
+    echo "Creating parent root dataset $ROOT_PARENT..."
+    sudo zfs create -o exec=on -o setuid=on -o devices=on "$ROOT_PARENT"
+fi
+
+# 3. Check if root dataset for the distro exists
+if zfs list "$ROOT_DATASET" >/dev/null 2>&1; then
+    echo "Error: Root dataset $ROOT_DATASET already exists."
+    read -p "Do you want to DESTROY and RECREATE it? Type YES to confirm: " CONFIRM
+    if [[ "$CONFIRM" == "YES" ]]; then
+        echo "Destroying existing root dataset $ROOT_DATASET..."
+        sudo zfs destroy -r "$ROOT_DATASET"
+        echo "Recreating root dataset $ROOT_DATASET..."
+        sudo zfs create -o mountpoint=/ -o canmount=noauto "$ROOT_DATASET"
+    else
+        echo "Exiting without changes."
+        exit 1
+    fi
+else
     echo "Creating root dataset $ROOT_DATASET..."
     sudo zfs create -o mountpoint=/ -o canmount=noauto "$ROOT_DATASET"
 fi
 
-# 3. Export pool if already imported
+# 4. Confirm the root dataset was created successfully
+if zfs list "$ROOT_DATASET" >/dev/null 2>&1; then
+    echo "Confirmed: Root dataset $ROOT_DATASET exists."
+else
+    echo "ERROR: Root dataset $ROOT_DATASET does not exist after creation attempt!"
+    exit 1
+fi
+
+# 5. Export pool if already imported
 if zpool list | grep -q "^$POOL\b"; then
     echo "Exporting pool $POOL..."
     sudo zpool export $POOL
 fi
 
-# 4. Ensure /mnt exists
+# 6. Ensure /mnt exists
 sudo mkdir -p "$MNT"
 
-# 5. Import pool at /mnt
+# 7. Import pool at /mnt
 echo "Importing pool $POOL at $MNT..."
 sudo zpool import -R "$MNT" $POOL
 
-# 6. Mount root dataset
+# 8. Mount root dataset
 echo "Mounting root dataset $ROOT_DATASET..."
 sudo zfs mount "$ROOT_DATASET"
 
-# 7. Create all necessary parent directories under /mnt
-PARENT_DIRS=(
-    "$MNT/home/jj"
-    "$MNT/home/leah"
-    "$MNT/var/lib"
-)
-for dir in "${PARENT_DIRS[@]}"; do
-    if [ ! -d "$dir" ]; then
-        echo "Creating parent directory: $dir"
-        sudo mkdir -p "$dir"
-    else
-        echo "Parent directory already exists: $dir"
-    fi
-done
-
-# 8. Mount all remaining datasets (ZFS will create child mountpoints as needed)
-echo "Mounting all datasets..."
-sudo zfs mount -a
-
-echo "All datasets mounted under $MNT."
-sudo zfs list -r -o name,mountpoint $POOL
+echo "Root dataset setup complete."
