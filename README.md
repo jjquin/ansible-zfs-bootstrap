@@ -1,64 +1,66 @@
-## ansible-zfs-bootstrap
+# linux-zfs-bootstrap
 
-This repository provides a reproducible, script-driven and Ansible-automated workflow for installing Linux distributions (with ZFS root) on multiple machines, supporting both single- and multi-distro setups. It is designed for advanced users who want to automate and standardize their Linux installations across different hardware using ZFS, with all post-install configuration managed by Ansible.
+This repository provides a reproducible, script-driven workflow for installing Linux distributions with ZFS as the root filesystem. It is designed for advanced users who want to automate and standardize minimal Linux installations across different hardware and distributions, with all post-install configuration delegated to Ansible (see [ansible-linux-zfs](https://github.com/jjquin/ansible-linux-zfs)).
 
 ---
 
-### **What This Repo Does**
+## What This Repo Does
 
 - **Bootstraps a new Linux install** (from a live ISO) with ZFS as the root filesystem.
 - **Supports multiple hosts and distros** by prompting for or auto-detecting the target machine and distribution.
 - **Automates pre-chroot setup** (partitioning, pool creation, base install) via scripts.
-- **Delegates all post-chroot configuration** (users, hostname, software, etc.) to Ansible playbooks and roles.
-- **Keeps all scripts, templates, and Ansible logic in one place** for easy management and reproducibility.
+- **Sets up only a minimal base system**: no user accounts or applications are installed-just enough to boot and hand off to Ansible for further configuration.
+- **Keeps all setup scripts organized in a single place** for easy management and reproducibility.
 
 ---
 
-## **How to Use**
+## Directory Structure
 
-### **1. Boot a Live ISO**
-
-Boot into a supported Linux live ISO (e.g., Manjaro, Debian, Fedora, etc.).
+- `scripts/`  
+  Contains all setup scripts:
+  - Common scripts for general tasks.
+  - Distro-specific scripts in subfolders named after the distro ID (from `/etc/os-release`).
 
 ---
 
-### **2. Run the Bootstrap Script**
+## How to Use
 
-You can run the bootstrap script directly with:
+1. **Boot a Live ISO**  
+   Boot into a supported Linux live ISO (e.g., Manjaro, Debian, Fedora, etc.).
+
+2. **Run the Bootstrap Script**  
+   Run the bootstrap script from the live environment:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/jjquin/ansible-zfs-bootstrap/main/scripts/00-bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/jjquin/linux-zfs-bootstrap/main/scripts/00-bootstrap.sh)
+```
 
-  ```
-- Proceed with pool creation, dataset setup, and base install as directed by the scripts.
-- After chroot and base install, use the included Ansible playbook (`ansible/site.yml`) to configure users, hostname, software, and more.
+- Follow prompts for pool creation, dataset setup, and base install as directed by the scripts.
+- After reboot, continue with Ansible-based configuration using [ansible-linux-zfs](https://github.com/jjquin/ansible-linux-zfs).
 
 ---
 
-## **Host and Hardware Logic**
+## Host and Hardware Logic
 
 - `TARGET_HOST` controls host-specific logic, such as which drives to use for ZFS pools.
 - If left blank, the script attempts to auto-detect based on CPU vendor and drive count.
 - If not recognized, you will be prompted to enter the hostname manually.
-- Scripts can use `TARGET_HOST` to prompt for drive selection or automate hardware-specific steps.
+- Scripts use `TARGET_HOST` to prompt for drive selection or automate hardware-specific steps.
 
 ---
 
-## **Extending and Customizing**
+## Extending and Customizing
 
-- Add or edit scripts in `scripts//` for pre-chroot setup.
-- Add or edit Ansible roles and playbooks in `ansible/` for post-install configuration.
-- Use `TARGET_HOST` and `DISTRO_ID` in your scripts and playbooks for conditional logic.
+- Add or edit scripts in `scripts/` for pre-chroot setup.
+- Use `TARGET_HOST` and `DISTRO_ID` in your scripts for conditional logic.
+- For post-install configuration, see [ansible-linux-zfs](https://github.com/jjquin/ansible-linux-zfs).
 
 ---
 
-## **Contributing**
+## Contributing
 
-PRs and issues are welcome! Please document any new hardware or distro logic clearly in both scripts and playbooks.
+Pull requests and issues are welcome! Please document any new hardware or distro logic clearly in the scripts.
 
 ---
 
 **This repository aims to make multi-distro, ZFS-root Linux installs repeatable, robust, and easy to manage with Ansible.**
-
----
-Answer from Perplexity: pplx.ai/share
