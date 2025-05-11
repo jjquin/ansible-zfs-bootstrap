@@ -1,0 +1,71 @@
+# ZFS Dataset Creation Commands
+
+# Reserved space
+sudo zfs create -o refreservation=100G zroot/Reserved
+
+# ROOT
+sudo zfs create -o exec=on -o setuid=on -o devices=on zroot/ROOT
+
+# HOME (mountpoint, canmount, exec)
+sudo zfs create -o mountpoint=/home -o canmount=no -o exec=on zroot/home
+sudo zfs create -o canmount=no zroot/home/jj
+sudo zfs create -o canmount=no zroot/home/leah
+sudo zfs create zroot/home/Shared
+sudo zfs create zroot/home/jj/Vaults
+sudo zfs create zroot/home/jj/Downloads
+sudo zfs create -o recordsize=16K zroot/home/jj/Code
+sudo zfs create -o recordsize=1M -o compression=zle zroot/home/jj/Media
+sudo zfs create zroot/home/jj/Books
+sudo zfs create zroot/home/jj/.var
+sudo zfs create zroot/home/leah/Documents
+sudo zfs create zroot/home/leah/Downloads
+sudo zfs create -o recordsize=1M -o compression=zle zroot/home/leah/Media
+sudo zfs create zroot/home/leah/.var/
+sudo zfs create -o recordsize=1M -o compression=zle zroot/home/Shared/Music
+sudo zfs create -o recordsize=1M -o compression=zle zroot/home/Shared/Pictures
+
+# APPDATA
+sudo zfs create -o mountpoint=/var/lib -o canmount=no -o exec=on -o devices=on zroot/appdata
+sudo zfs create zroot/appdata/docker
+sudo zfs create zroot/appdata/podman
+sudo zfs create -o recordsize=1M -o compression=zle zroot/appdata/libvirt
+sudo zfs create -o devices=off zroot/appdata/flatpak
+sudo zfs create -o mountpoint=/nix -o devices=off zroot/appdata/nix
+
+echo "All common datasets created!"
+sudo zfs list -r -o name,mountpoint zroot
+
+# ---------------------------------------------------------------
+# Home Directory and Symlink Setup (after mounting all datasets)
+# ---------------------------------------------------------------
+
+# For jj and leah
+for user in jj leah; do
+    home="/home/$user"
+    # Create folders
+    mkdir -p "$home/Media/Pictures" "$home/Media/Music" "$home/Media/Videos"
+    mkdir -p "$home/.var/lib"
+done
+
+# For jj only
+mkdir -p /home/jj/Vaults/Nexus/Projects
+mkdir -p /home/jj/Vaults/Nexus/Resources
+
+# For leah only
+mkdir -p /home/leah/Documents/Templates
+
+# For Shared
+mkdir -p /home/Shared/Documents
+
+# Symlinks for jj and leah
+for user in jj leah; do
+    home="/home/$user"
+    ln -sf /home/Shared "$home/Shared"
+done
+
+# Symlinks for jj only
+ln -sf /home/jj/Vaults/Nexus/Inbox /home/jj/Documents
+ln -sf /home/jj/Vaults/Nexus/Projects /home/jj/Projects
+ln -sf /home/jj/Vaults/Nexus/Resources /home/jj/Resources
+
+echo "Folders and symlinks created."
