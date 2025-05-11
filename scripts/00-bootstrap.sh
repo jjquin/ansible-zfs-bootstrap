@@ -1,7 +1,10 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Prompt for TARGET_HOST first
+# 00-bootstrap.sh
+# Detects target host and distro, ensures git is installed, and clones the linux-zfs-bootstrap repo.
+
+# Prompt for TARGET_HOST
 read -p "Enter target hostname (leave blank for auto-detect): " TARGET_HOST
 
 # Auto-detect if blank
@@ -22,6 +25,7 @@ fi
 
 export TARGET_HOST
 
+# Save to temp config for later scripts
 echo "TARGET_HOST=$TARGET_HOST" > /tmp/host.conf
 
 # Distro detection
@@ -34,7 +38,6 @@ else
 fi
 
 export DISTRO_ID
-
 echo "DISTRO_ID=$DISTRO_ID" >> /tmp/host.conf
 
 # Ensure git is installed
@@ -57,16 +60,16 @@ if ! command -v git &>/dev/null; then
     esac
 fi
 
-# Clone the repo to $HOME
-REPO_DIR="$HOME/ansible-zfs-bootstrap"
+# Clone the linux-zfs-bootstrap repo to $HOME if not already present
+REPO_DIR="$HOME/linux-zfs-bootstrap"
 if [ ! -d "$REPO_DIR" ]; then
-    git clone https://github.com/jjquin/ansible-zfs-bootstrap.git "$REPO_DIR"
+    git clone https://github.com/jjquin/linux-zfs-bootstrap.git "$REPO_DIR"
 fi
 
 echo "Bootstrap complete. Repo cloned to $REPO_DIR."
 echo "Host: $TARGET_HOST, Distro: $DISTRO_ID"
-echo "You can now run the next script in $REPO_DIR/$DISTRO_ID/scripts/"
+echo "You can now run the next script in $REPO_DIR/scripts/"
 
 # Optionally, cd into the repo and start the next phase automatically:
-# cd "$REPO_DIR/$DISTRO_ID/scripts"
-# ./next-script.sh
+# cd "$REPO_DIR/scripts"
+# ./01-zfs-live-setup.sh
