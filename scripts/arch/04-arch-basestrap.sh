@@ -28,14 +28,6 @@ fi
 
 MNT=/mnt
 
-# 1. Update mirrors using reflector
-if ! command -v reflector &>/dev/null; then
-    sudo pacman -Sy --noconfirm reflector rsync
-fi
-
-sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
-sudo reflector --verbose --country US,CA --protocol https --sort rate --latest 20 --download-timeout 6 --save /etc/pacman.d/mirrorlist
-
 sudo pacman -Syy
 
 # 2. Copy pacman.conf and pacman keyring to /mnt

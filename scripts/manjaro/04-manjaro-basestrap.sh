@@ -28,8 +28,7 @@ fi
 
 MNT=/mnt
 
-# 1. Update mirrors and refresh package database
-sudo pacman-mirrors --fasttrack
+# 1. refresh package database
 sudo pacman -Syy
 
 # 2. Detect latest installed kernel (e.g., linux515)

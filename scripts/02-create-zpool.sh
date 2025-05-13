@@ -21,10 +21,22 @@ else
     [[ ! "$CREATE" =~ ^[Yy]$ ]] && { echo "Exiting."; exit 0; }
 fi
 
-# --- Step 2: Select drive(s) ---
-mapfile -t drives < <(ls /dev/disk/by-id | grep -Ev 'part|loop|_1$|_1-part')
-if [[ -z "${TARGET_HOST-}" || "$TARGET_HOST" != "parents-pc" && "$TARGET_HOST" != "thinkpad-t450" ]]; then
-    echo "TARGET_HOST not recognized."
+# --- Step 2: Set drives based on TARGET_HOST or prompt ---
+DRIVE1=""
+DRIVE2=""
+
+if [[ "${TARGET_HOST-}" == "parents-pc" ]]; then
+    DRIVE1="/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_1TB_038507081B5D88262037"
+    DRIVE2="/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_1TB_6D12070C05A292162211"
+elif [[ "${TARGET_HOST-}" == "thinkpad-t450" ]]; then
+    DRIVE1=$(ls /dev/disk/by-id | grep -i samsung | grep -v part | head -n1)
+    DRIVE1="/dev/disk/by-id/$DRIVE1"
+    DRIVE2=""
+fi
+
+# If DRIVE1 is still blank, prompt for layout and drive selection
+if [[ -z "$DRIVE1" ]]; then
+    mapfile -t drives < <(ls /dev/disk/by-id | grep -Ev 'part|loop|_1$|_1-part')
     PS3="Is this a single drive or a mirror? "
     select layout in "Single Drive" "Mirror (2 drives)"; do
         [[ $REPLY == 1 || $REPLY == 2 ]] && break
@@ -46,22 +58,6 @@ if [[ -z "${TARGET_HOST-}" || "$TARGET_HOST" != "parents-pc" && "$TARGET_HOST" !
         select d2 in "${drives[@]}"; do
             [[ "$d2" != "$d1" ]] && DRIVE2="/dev/disk/by-id/$d2" && break
         done
-    fi
-    # Prompt if system is "newer" or "older"
-    read -p "Is this system 'newer' (NVMe/modern SSD) or 'older' (SATA/legacy SSD)? (n/o): " SYSAGE
-    [[ "$SYSAGE" =~ ^[Oo]$ ]] && IS_OLD=1 || IS_OLD=0
-else
-    if [[ "$TARGET_HOST" == "parents-pc" ]]; then
-        # Replace with your exact Sabrent Rocket IDs (without _1 or -part)
-        DRIVE1="/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_1TB_038507081B5D88262037"
-        DRIVE2="/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_1TB_6D12070C05A292162211"
-        IS_OLD=0
-    else
-        # Replace with your actual ThinkPad SSD ID
-        DRIVE1=$(ls /dev/disk/by-id | grep -i samsung | grep -v part | head -n1)
-        DRIVE1="/dev/disk/by-id/$DRIVE1"
-        DRIVE2=""
-        IS_OLD=1
     fi
 fi
 
@@ -100,14 +96,9 @@ ZPOOL_CMD=(zpool create -f
   -O exec=off
   -O setuid=off
   -O autotrim=on
+  -O compression=lz4
+  zroot
 )
-# Add unique options based on drive type (only compression now)
-if [[ $IS_OLD -eq 1 ]]; then
-    ZPOOL_CMD+=(-O compression=lz4)
-else
-    ZPOOL_CMD+=(-O compression=zstd)
-fi
-ZPOOL_CMD+=(zroot)
 if [[ -n "$DRIVE2" ]]; then
     ZPOOL_CMD+=(mirror "$DRIVE1" "$DRIVE2")
 else
