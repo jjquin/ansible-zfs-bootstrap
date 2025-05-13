@@ -23,7 +23,7 @@ fi
 
 # --- Step 2: Select drive(s) ---
 mapfile -t drives < <(ls /dev/disk/by-id | grep -Ev 'part|loop|_1$|_1-part')
-if [[ -z "$TARGET_HOST" || "$TARGET_HOST" != "parents-pc" && "$TARGET_HOST" != "thinkpad-t450" ]]; then
+if [[ -z "${TARGET_HOST-}" || "$TARGET_HOST" != "parents-pc" && "$TARGET_HOST" != "thinkpad-t450" ]]; then
     echo "TARGET_HOST not recognized."
     PS3="Is this a single drive or a mirror? "
     select layout in "Single Drive" "Mirror (2 drives)"; do
@@ -99,12 +99,13 @@ ZPOOL_CMD=(zpool create -f
   -O devices=off
   -O exec=off
   -O setuid=off
+  -O autotrim=on
 )
-# Add unique options based on drive type
+# Add unique options based on drive type (only compression now)
 if [[ $IS_OLD -eq 1 ]]; then
-    ZPOOL_CMD+=(-O compression=lz4 -O autotrim=off)
+    ZPOOL_CMD+=(-O compression=lz4)
 else
-    ZPOOL_CMD+=(-O compression=zstd -O autotrim=on)
+    ZPOOL_CMD+=(-O compression=zstd)
 fi
 ZPOOL_CMD+=(zroot)
 if [[ -n "$DRIVE2" ]]; then

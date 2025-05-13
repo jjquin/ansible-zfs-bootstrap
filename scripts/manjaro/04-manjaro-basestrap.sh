@@ -57,9 +57,13 @@ sudo basestrap "$MNT" \
 sudo mkdir -p "$MNT/etc"
 echo "$TARGET_HOST" | sudo tee "$MNT/etc/hostname"
 
-echo "Base system installed, networking enabled, and hostname set."
+# 5. Copy chroot script into /mnt/root
+sudo mkdir -p "$MNT/root"
+sudo cp ./05-manjaro-chroot-zfs-boot.sh "$MNT/root/"
 
-# 5. Enter chroot for further configuration
+echo "Base system installed, networking enabled, hostname set, and chroot script copied."
+
+# 6. Enter chroot for further configuration
 echo "Entering chroot for further configuration..."
 sudo arch-chroot "$MNT"
 
