@@ -74,6 +74,12 @@ else
     exit 1
 fi
 
+# 5b. Set ZFSBootMenu user properties
+echo "Setting ZFSBootMenu properties on $ROOT_DATASET and $ROOT_PARENT..."
+sudo zfs set org.zfsbootmenu:bootfs=on "$ROOT_DATASET"
+sudo zfs set org.zfsbootmenu:active=on "$ROOT_PARENT"
+sudo zfs set org.zfsbootmenu:commandline="quiet" "$ROOT_PARENT"
+
 # 6. Export pool if already imported
 if zpool list | grep -q "^$POOL\b"; then
     echo "Exporting pool $POOL..."

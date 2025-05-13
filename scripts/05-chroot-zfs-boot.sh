@@ -27,25 +27,30 @@ echo "Setting zpool cachefile..."
 mkdir -p /etc/zfs
 zpool set cachefile=/etc/zfs/zpool.cache zroot
 
-# 4. Set ZFSBootMenu properties
-echo "Setting ZFSBootMenu properties..."
-zfs set org.zfsbootmenu:bootfs=on zroot/ROOT/$DISTRO_ID
-zfs set org.zfsbootmenu:active=on zroot/ROOT
-zfs set org.zfsbootmenu:commandline="quiet" zroot/ROOT
-
 # 5. Setup zfs list cache
 echo "Setting up zfs list cache..."
 mkdir -p /etc/zfs/zfs-list.cache
 touch /etc/zfs/zfs-list.cache/zroot
 
-# 6. Enable required ZFS systemd services
+# 6. Ensure correct symlink for history_event-zfs-list-cacher.sh
+SYMLINK_PATH="/etc/zfs/zed.d/history_event-zfs-list-cacher.sh"
+TARGET_PATH="/usr/lib/zfs-linux/zed.d/history_event-zfs-list-cacher.sh"
+
+if [[ ! -L "$SYMLINK_PATH" || "$(readlink -f "$SYMLINK_PATH")" != "$TARGET_PATH" ]]; then
+    echo "Creating symlink: $SYMLINK_PATH -> $TARGET_PATH"
+    ln -sf "$TARGET_PATH" "$SYMLINK_PATH"
+else
+    echo "Symlink for history_event-zfs-list-cacher.sh already exists and is correct."
+fi
+
+# 7. Enable required ZFS systemd services
 echo "Enabling ZFS systemd services..."
 systemctl enable zfs-import-cache.service
 systemctl enable zfs.target
 systemctl enable zfs-import.target
 systemctl enable zfs-zed.service
 
-# 7. Configure dracut for ZFS and regenerate initramfs
+# 8. Configure dracut for ZFS and regenerate initramfs
 echo "Configuring dracut for ZFS..."
 cat << EOF > /etc/dracut.conf.d/zol.conf
 nofsck="yes"
@@ -56,7 +61,7 @@ EOF
 echo "Regenerating initramfs with dracut..."
 dracut --force --regenerate-all
 
-# 8. Arch-specific: Initialize and sign pacman keys for archzfs
+# 9. Arch-specific: Initialize and sign pacman keys for archzfs
 if [ "$DISTRO_ID" = "arch" ]; then
     echo "Initializing and signing pacman keys for archzfs..."
     pacman-key --init
@@ -64,7 +69,7 @@ if [ "$DISTRO_ID" = "arch" ]; then
     pacman-key --lsign-key F75D9D76
 fi
 
-# 9. Set root password
+# 10. Set root password
 echo "Set root password:"
 passwd
 
